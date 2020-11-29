@@ -3,6 +3,7 @@
 import logging
 import os
 
+import dbus
 import flask
 import flask_wtf
 
@@ -52,7 +53,21 @@ def handle_csrf_error(e):
     }), 400
 
 
+def setup_bluetooth():
+    with open(os.path.join(os.path.dirname(__file__), 'sdp_record.xml'), "r") as f:
+        service_record = f.read()
+
+    opts = { "AutoConnect": True, "ServiceRecord": service_record }
+    bus = dbus.SystemBus()
+    manager = dbus.Interface(bus.get_object(
+        "org.bluez", "/org/bluez"), "org.bluez.ProfileManager1")
+    manager.RegisterProfile("/org/bluez/hci0", "00001124-0000-1000-8000-00805f9b34fb", opts)
+    print("profile registered")
+
+
 def main():
+    setup_bluetooth()
+
     socketio = socket_api.socketio
     socketio.init_app(app)
     socketio.run(app,
